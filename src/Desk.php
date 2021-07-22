@@ -2,6 +2,7 @@
 
 class Desk {
     private $figures = [];
+    private $currentColor;
 
     public function __construct() {
         $this->figures['a'][1] = new Rook(false);
@@ -39,6 +40,8 @@ class Desk {
         $this->figures['f'][8] = new Bishop(true);
         $this->figures['g'][8] = new Knight(true);
         $this->figures['h'][8] = new Rook(true);
+        
+        $this->setCurrentColor();        
     }
 
     public function move($move) {
@@ -50,11 +53,20 @@ class Desk {
         $yFrom = $match[2];
         $xTo   = $match[3];
         $yTo   = $match[4];
+        
+        if(!$this->checkSequenceMove($xFrom, $yFrom)){         
+          throw new \Exception("Incorrect sequence move...");      
+        }     
+        if(!$this->checkValidMove($xFrom, $yFrom, $xTo, $yTo)){         
+          throw new \Exception("Incorrect piece move...");      
+        } 
 
         if (isset($this->figures[$xFrom][$yFrom])) {
             $this->figures[$xTo][$yTo] = $this->figures[$xFrom][$yFrom];
         }
         unset($this->figures[$xFrom][$yFrom]);
+        
+        $this->setCurrentColor(); 
     }
 
     public function dump() {
@@ -70,5 +82,84 @@ class Desk {
             echo "\n";
         }
         echo "  abcdefgh\n";
+    }
+    
+    public function setCurrentColor() {
+      if($this->currentColor == 'white'){
+        $this->currentColor = 'black';
+      } else {
+        $this->currentColor = 'white';
+      }
+      return $this->currentColor;
+    }
+        
+    public function checkValidMove($xFrom, $yFrom, $xTo, $yTo){  
+      $indexMove = 1;
+      if($this->currentColor == 'black'){
+        $indexMove = -1;
+      } 
+      $figureName = $this->getFigureName($xFrom, $yFrom);
+      if($figureName == 'Pawn'){
+        return $this->checkValidMovePawn($xFrom, $yFrom, $xTo, $yTo, $indexMove);
+      }
+      return true;
+    }
+    
+    public function checkValidMovePawn($xFrom, $yFrom, $xTo, $yTo, $indexMove){
+      if(abs($yTo - $yFrom)/($yTo - $yFrom) != $indexMove){
+        return false;
+      }
+      if(($indexMove * ($yTo - $yFrom) == 1) && ($xTo == $xFrom) && empty($this->figures[$xTo][$yTo])){
+        return true;
+      }
+      if (($indexMove == 1) && ($yFrom == 2) && ($yTo == 4) && ($xTo == $xFrom) && empty($this->figures[$xTo][3]) && empty($this->figures[$xTo][4])){
+        return true;
+      }
+      if (($indexMove == -1) && ($yFrom == 7) && ($yTo == 5) && ($xTo == $xFrom) && empty($this->figures[$xTo][6]) && empty($this->figures[$xTo][5])){
+        return true;
+      }    
+      if ($indexMove == 1){                  
+        if ((($xFrom == chr(ord($xTo)-1) && $yFrom == $yTo-1) || ($xFrom == chr(ord($xTo)+1) && $yFrom == $yTo-1)) && isset($this->figures[$xTo][$yTo])){
+          $figureAttack = $this->figures[$xTo][$yTo];        
+          if($figureAttack->isBlack()){
+            unset($this->figures[$xTo][$yTo]);             
+            return true;
+          }
+        }
+      }
+      if ($indexMove == -1){          
+        if ((($xFrom == chr(ord($xTo)-1) && $yFrom == $yTo+1) || ($xFrom == chr(ord($xTo)+1) && $yFrom == $yTo+1)) && isset($this->figures[$xTo][$yTo])){
+          $figureAttack = $this->figures[$xTo][$yTo];
+          if(!$figureAttack->isBlack()){            
+            unset($this->figures[$xTo][$yTo]);   
+            return true;
+          }
+        }
+      }  
+      return false;
+    }
+      
+    public function getFigureName($xFrom, $yFrom){
+      $figure = $this->figures[$xFrom][$yFrom];
+      if($figure){
+        return $figure->getFigureName();
+      } else {
+        throw new \Exception("Empty figure..."); 
+      }
+    }
+    
+    public function checkSequenceMove($xFrom, $yFrom){
+      $figure = $this->figures[$xFrom][$yFrom];      
+      if($figure){
+        if($this->currentColor == 'white' && !$figure->isBlack()){
+          return true;
+        } else if($this->currentColor == 'black' && $figure->isBlack()){
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        throw new \Exception("Empty figure..."); 
+      }
     }
 }

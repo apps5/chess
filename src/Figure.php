@@ -11,4 +11,12 @@ class Figure {
     public function __toString() {
         throw new \Exception("Not implemented");
     }
+    
+    public function isBlack(){
+      return $this->isBlack ? true : false;
+    }
+    
+    public function getFigureName(){
+      return get_called_class();
+    }
 }
